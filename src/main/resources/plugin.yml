@@ -1,0 +1,18 @@
+name: MiraCore
+version: ${version}
+main: com.mira.core.MiraCorePlugin
+api-version: '1.21'
+authors: [FiveS]
+description: Shared infrastructure and API services for the Mira plugin ecosystem.
+
+commands:
+  miracore:
+    description: MiraCore diagnostics and administration.
+    usage: /miracore [status|test|reload|help]
+    aliases: [mcore]
+    permission: miracore.admin
+
+permissions:
+  miracore.admin:
+    description: Access to MiraCore administration and diagnostics.
+    default: op

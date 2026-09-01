@@ -1,5 +1,6 @@
 name: Build
 
+# CI verifies MiraCore against Java 21 and Paper 1.21.11.
 on:
   push:
     branches: [main]

@@ -4,6 +4,12 @@ MiraCore is the shared infrastructure plugin for the Mira Minecraft plugin ecosy
 
 MiraCore deliberately contains infrastructure rather than gameplay. It gives other Mira plugins one stable place for shared services, cooldowns, messaging, module discovery, health reporting, and diagnostics.
 
+## Download
+
+[**Download MiraCore v0.1.0**](https://github.com/FiveSOCE/MIra-core/releases/download/v0.1.0/MiraCore-0.1.0.jar)
+
+Current release: **v0.1.0**
+
 ## What MiraCore provides
 
 - Bukkit `ServicesManager` API discovery through `MiraCore`

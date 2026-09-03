@@ -1,0 +1,40 @@
+name: Release v0.2.0
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/release-v0.2.0.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout tested source
+        uses: actions/checkout@v4
+        with:
+          ref: 295a353417545ae3bb349f2cb480ad191ed04f51
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.10'
+      - name: Test and build
+        run: gradle clean test build --stacktrace
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create v0.2.0 \
+            build/libs/MiraCore-0.2.0.jar \
+            --target 295a353417545ae3bb349f2cb480ad191ed04f51 \
+            --title "MiraCore v0.2.0" \
+            --notes "Shared ecosystem infrastructure expansion. Adds persistent player profiles, central notifications, global audit logging, pagination helpers, permission diagnostics, milestone tracking and expanded suite health tooling while preserving the existing service, cooldown, messaging and module APIs."

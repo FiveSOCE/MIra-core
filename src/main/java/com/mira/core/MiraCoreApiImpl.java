@@ -1,11 +1,6 @@
 package com.mira.core;
 
-import com.mira.core.api.CooldownService;
-import com.mira.core.api.DiagnosticReport;
-import com.mira.core.api.MessageService;
-import com.mira.core.api.MiraCore;
-import com.mira.core.api.ModuleRegistry;
-import com.mira.core.api.ServiceRegistry;
+import com.mira.core.api.*;
 import com.mira.core.service.CoreDiagnostics;
 
 public final class MiraCoreApiImpl implements MiraCore {
@@ -14,44 +9,43 @@ public final class MiraCoreApiImpl implements MiraCore {
     private final ServiceRegistry services;
     private final CooldownService cooldowns;
     private final ModuleRegistry modules;
+    private final PlayerProfileService profiles;
+    private final NotificationService notifications;
+    private final AuditService audit;
+    private final PaginationService pagination;
+    private final PermissionDebugService permissionDebug;
+    private final MilestoneService milestones;
     private CoreDiagnostics diagnostics;
 
-    public MiraCoreApiImpl(String version, MessageService messages, ServiceRegistry services, CooldownService cooldowns, ModuleRegistry modules) {
+    public MiraCoreApiImpl(String version, MessageService messages, ServiceRegistry services, CooldownService cooldowns,
+                           ModuleRegistry modules, PlayerProfileService profiles, NotificationService notifications,
+                           AuditService audit, PaginationService pagination, PermissionDebugService permissionDebug,
+                           MilestoneService milestones) {
         this.version = version;
         this.messages = messages;
         this.services = services;
         this.cooldowns = cooldowns;
         this.modules = modules;
+        this.profiles = profiles;
+        this.notifications = notifications;
+        this.audit = audit;
+        this.pagination = pagination;
+        this.permissionDebug = permissionDebug;
+        this.milestones = milestones;
     }
 
-    public void diagnostics(CoreDiagnostics diagnostics) {
-        this.diagnostics = diagnostics;
-    }
-
-    @Override
-    public String version() {
-        return version;
-    }
-
-    @Override
-    public MessageService messages() {
-        return messages;
-    }
-
-    @Override
-    public ServiceRegistry services() {
-        return services;
-    }
-
-    @Override
-    public CooldownService cooldowns() {
-        return cooldowns;
-    }
-
-    @Override
-    public ModuleRegistry modules() {
-        return modules;
-    }
+    public void diagnostics(CoreDiagnostics diagnostics) { this.diagnostics = diagnostics; }
+    @Override public String version() { return version; }
+    @Override public MessageService messages() { return messages; }
+    @Override public ServiceRegistry services() { return services; }
+    @Override public CooldownService cooldowns() { return cooldowns; }
+    @Override public ModuleRegistry modules() { return modules; }
+    @Override public PlayerProfileService profiles() { return profiles; }
+    @Override public NotificationService notifications() { return notifications; }
+    @Override public AuditService audit() { return audit; }
+    @Override public PaginationService pagination() { return pagination; }
+    @Override public PermissionDebugService permissionDebug() { return permissionDebug; }
+    @Override public MilestoneService milestones() { return milestones; }
 
     @Override
     public DiagnosticReport runDiagnostics() {

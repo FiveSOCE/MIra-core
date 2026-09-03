@@ -7,12 +7,12 @@ description: Shared infrastructure and API services for the Mira plugin ecosyste
 
 commands:
   miracore:
-    description: MiraCore diagnostics and administration.
-    usage: /miracore [status|test|reload|help]
+    description: MiraCore suite dashboard, diagnostics and administration.
+    usage: /miracore [status|test|why|audit|profiles|reload|help]
     aliases: [mcore]
     permission: miracore.admin
 
 permissions:
   miracore.admin:
-    description: Access to MiraCore administration and diagnostics.
+    description: Access to MiraCore administration, audits and diagnostics.
     default: op

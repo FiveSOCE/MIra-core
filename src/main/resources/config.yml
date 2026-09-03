@@ -1,5 +1,5 @@
 # Prefix used by MiraCore chat output.
-prefix: "&5[Mira]&r "
+prefix: "&5&lMira &8>> &r"
 
 # Runs a compact self-check shortly after startup and writes the result to console.
 diagnostics:

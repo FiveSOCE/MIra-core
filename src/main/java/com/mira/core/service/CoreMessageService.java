@@ -10,6 +10,7 @@ import java.util.Objects;
 
 public final class CoreMessageService implements MessageService {
     private static final LegacyComponentSerializer LEGACY = LegacyComponentSerializer.legacyAmpersand();
+    private static final String DEFAULT_PREFIX = "&5&lMira &8>> &r";
 
     private final JavaPlugin plugin;
     private volatile Component prefix = Component.empty();
@@ -20,8 +21,8 @@ public final class CoreMessageService implements MessageService {
     }
 
     public void reload() {
-        String raw = plugin.getConfig().getString("prefix", "&5[Mira]&r ");
-        prefix = LEGACY.deserialize(raw == null ? "&5[Mira]&r " : raw);
+        String raw = plugin.getConfig().getString("prefix", DEFAULT_PREFIX);
+        prefix = LEGACY.deserialize(raw == null ? DEFAULT_PREFIX : raw);
     }
 
     @Override

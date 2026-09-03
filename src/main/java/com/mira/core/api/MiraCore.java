@@ -11,5 +11,17 @@ public interface MiraCore {
 
     ModuleRegistry modules();
 
+    PlayerProfileService profiles();
+
+    NotificationService notifications();
+
+    AuditService audit();
+
+    PaginationService pagination();
+
+    PermissionDebugService permissionDebug();
+
+    MilestoneService milestones();
+
     DiagnosticReport runDiagnostics();
 }

@@ -8,6 +8,9 @@ on:
     branches: [main]
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -33,6 +36,19 @@ jobs:
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: MiraCore
-          path: build/libs/MiraCore-*.jar
+          name: MiraCore-0.3.0
+          path: build/libs/MiraCore-0.3.0.jar
           if-no-files-found: error
+
+      - name: Publish v0.3.0 release if missing
+        if: github.event_name != 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if ! gh release view v0.3.0 >/dev/null 2>&1; then
+            gh release create v0.3.0 \
+              build/libs/MiraCore-0.3.0.jar \
+              --target "${{ github.sha }}" \
+              --title "MiraCore v0.3.0" \
+              --notes "Adds shared BossBar presentation, persistent maintenance mode with bypass and scheduled activation, and report-only GitHub release checking for installed Mira modules. No automatic plugin downloads or replacements are performed."
+          fi

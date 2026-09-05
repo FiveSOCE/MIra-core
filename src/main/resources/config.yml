@@ -9,12 +9,52 @@ diagnostics:
 audit:
   max-entries: 5000
 
+# MiraCore owns the normal server-list MOTD and maintenance override.
+# Remove any old MOTD plugin once this build is installed to avoid competing ping listeners.
+motd:
+  normal:
+    lines:
+      - "&5&lMira &8| &fFactions"
+      - "&7Welcome to the server"
+  maintenance:
+    lines:
+      - "&5&lMira &8| &cMAINTENANCE"
+      - "&7%reason%"
+  join:
+    enabled: false
+    messages:
+      - "&5&lMira &8>> &fWelcome to the server."
+  max-players:
+    modify: false
+    value: 200
+  icon:
+    enabled: false
+    file: "server-icon.png"
+
 # Shared maintenance authority. Runtime state/schedules are persisted in maintenance.yml.
 maintenance:
   enabled: false
+  default-reason: "Server maintenance"
   bypass-permission: "miracore.maintenance.bypass"
-  kick-message: "&5&lMira &8>> &cThe server is currently under maintenance. Please try again later."
+
+  # /miracore maintenance on [reason...] starts this countdown before the gate activates.
+  # Use "force" for immediate activation.
+  activation-countdown-seconds: 30
+
+  # Warning broadcasts fired while maintenance is counting down.
+  countdown-seconds: [1800, 600, 300, 60, 30, 10, 5, 4, 3, 2, 1]
+
+  # Every connected player is kicked when maintenance activates.
+  # Bypass permission controls re-entry only.
+  kick-message: "&5&lMira &8>> &cThe server is now under maintenance. &7Reason: &f%reason%"
+
+  # Legacy single-line getter kept for API compatibility. Server-list rendering uses motd.maintenance.lines.
   motd: "&5&lMira &8- &cMaintenance"
+
+  messages:
+    countdown: "&5&lMira &8>> &eMaintenance begins in &f%time%&e. &7%reason%"
+    active: "&5&lMira &8>> &cMaintenance mode is now active. &7%reason%"
+    disabled: "&5&lMira &8>> &aMaintenance mode has ended. The server is open again."
 
 # Report-only GitHub release checks. MiraCore never downloads or replaces JARs.
 updater:

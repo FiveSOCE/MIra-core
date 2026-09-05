@@ -11,6 +11,14 @@ commands:
     usage: /miracore [status|test|why|audit|profiles|maintenance|updates|reload|help]
     aliases: [mcore]
     permission: miracore.admin
+  rewards:
+    description: Preview and claim safely queued Mira rewards.
+    usage: /rewards
+    permission: miracore.rewards
+  claim:
+    description: Redeem a global Mira claim code into the reward queue.
+    usage: /claim <code>
+    permission: miracore.rewards
 
 permissions:
   miracore.admin:
@@ -19,3 +27,6 @@ permissions:
   miracore.maintenance.bypass:
     description: Allows joining while MiraCore maintenance mode is enabled.
     default: op
+  miracore.rewards:
+    description: Allows viewing queued rewards and using claim codes.
+    default: true

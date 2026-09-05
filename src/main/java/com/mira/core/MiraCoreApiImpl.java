@@ -18,13 +18,14 @@ public final class MiraCoreApiImpl implements MiraCore {
     private final BossBarService bossBars;
     private final MaintenanceService maintenance;
     private final UpdateService updates;
+    private final RewardService rewards;
     private CoreDiagnostics diagnostics;
 
     public MiraCoreApiImpl(String version, MessageService messages, ServiceRegistry services, CooldownService cooldowns,
                            ModuleRegistry modules, PlayerProfileService profiles, NotificationService notifications,
                            AuditService audit, PaginationService pagination, PermissionDebugService permissionDebug,
                            MilestoneService milestones, BossBarService bossBars, MaintenanceService maintenance,
-                           UpdateService updates) {
+                           UpdateService updates, RewardService rewards) {
         this.version = version;
         this.messages = messages;
         this.services = services;
@@ -39,6 +40,7 @@ public final class MiraCoreApiImpl implements MiraCore {
         this.bossBars = bossBars;
         this.maintenance = maintenance;
         this.updates = updates;
+        this.rewards = rewards;
     }
 
     public void diagnostics(CoreDiagnostics diagnostics) { this.diagnostics = diagnostics; }
@@ -56,6 +58,7 @@ public final class MiraCoreApiImpl implements MiraCore {
     @Override public BossBarService bossBars() { return bossBars; }
     @Override public MaintenanceService maintenance() { return maintenance; }
     @Override public UpdateService updates() { return updates; }
+    @Override public RewardService rewards() { return rewards; }
 
     @Override
     public DiagnosticReport runDiagnostics() {

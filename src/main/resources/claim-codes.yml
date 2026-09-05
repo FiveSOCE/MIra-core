@@ -1,0 +1,12 @@
+# Global claim-code definitions. Codes are case-insensitive.
+# Rewards are always placed into MiraCore's Reward Queue first.
+codes:
+  example:
+    enabled: false
+    title: "Example Gift"
+    permission: ""
+    expires-at: 0
+    items:
+      - material: DIAMOND
+        amount: 1
+    commands: []

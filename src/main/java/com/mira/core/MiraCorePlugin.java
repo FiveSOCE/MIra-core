@@ -4,6 +4,8 @@ import com.mira.core.api.*;
 import com.mira.core.listener.CoreBossBarListener;
 import com.mira.core.listener.CoreMaintenanceListener;
 import com.mira.core.listener.CoreProfileListener;
+import com.mira.core.listener.CoreRewardGuiListener;
+import com.mira.core.gui.CoreRewardGui;
 import com.mira.core.service.*;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.entity.Player;
@@ -24,6 +26,8 @@ public final class MiraCorePlugin extends JavaPlugin {
     private CoreBossBarService bossBarService;
     private CoreMaintenanceService maintenanceService;
     private CoreUpdateService updateService;
+    private CoreRewardService rewardService;
+    private CoreRewardGui rewardGui;
     private MiraCoreApiImpl api;
 
     @Override
@@ -43,10 +47,12 @@ public final class MiraCorePlugin extends JavaPlugin {
         bossBarService = new CoreBossBarService();
         maintenanceService = new CoreMaintenanceService(this, auditService);
         updateService = new CoreUpdateService(this, moduleRegistry);
+        rewardService = new CoreRewardService(this, auditService);
+        rewardGui = new CoreRewardGui(rewardService, messageService);
 
         api = new MiraCoreApiImpl(getPluginMeta().getVersion(), messageService, serviceRegistry, cooldownService, moduleRegistry,
                 profileService, notificationService, auditService, paginationService, permissionDebugService, milestoneService,
-                bossBarService, maintenanceService, updateService);
+                bossBarService, maintenanceService, updateService, rewardService);
         CoreDiagnostics diagnostics = new CoreDiagnostics(this, api, serviceRegistry, cooldownService, moduleRegistry);
         api.diagnostics(diagnostics);
 
@@ -61,11 +67,13 @@ public final class MiraCorePlugin extends JavaPlugin {
         serviceRegistry.register(BossBarService.class, bossBarService);
         serviceRegistry.register(MaintenanceService.class, maintenanceService);
         serviceRegistry.register(UpdateService.class, updateService);
+        serviceRegistry.register(RewardService.class, rewardService);
         moduleRegistry.register(this, "MiraCore");
 
         getServer().getPluginManager().registerEvents(new CoreProfileListener(profileService), this);
         getServer().getPluginManager().registerEvents(new CoreBossBarListener(bossBarService), this);
         getServer().getPluginManager().registerEvents(new CoreMaintenanceListener(maintenanceService), this);
+        getServer().getPluginManager().registerEvents(new CoreRewardGuiListener(rewardService, messageService, rewardGui), this);
         getServer().getScheduler().runTaskTimer(this, maintenanceService::tick, 20L, 20L);
         for (Player player : getServer().getOnlinePlayers()) profileService.touch(player.getUniqueId(), player.getName(), true);
 
@@ -74,6 +82,13 @@ public final class MiraCorePlugin extends JavaPlugin {
         if (command == null) throw new IllegalStateException("miracore command is missing from plugin.yml");
         command.setExecutor(executor);
         command.setTabCompleter(executor);
+
+        CorePlayerRewardCommand playerRewards = new CorePlayerRewardCommand(rewardService, messageService, rewardGui);
+        PluginCommand rewardsCommand = getCommand("rewards");
+        PluginCommand claimCommand = getCommand("claim");
+        if (rewardsCommand == null || claimCommand == null) throw new IllegalStateException("reward commands are missing from plugin.yml");
+        rewardsCommand.setExecutor(playerRewards);
+        claimCommand.setExecutor(playerRewards);
 
         getLogger().info("MiraCore v" + api.version() + " enabled. Shared suite services registered.");
 
@@ -95,6 +110,7 @@ public final class MiraCorePlugin extends JavaPlugin {
         if (serviceRegistry != null && api != null) serviceRegistry.unregister(MiraCore.class, api);
         if (cooldownService != null) cooldownService.clearAll();
         if (bossBarService != null) bossBarService.shutdown();
+        if (rewardService != null) rewardService.saveAll();
         if (moduleRegistry != null) moduleRegistry.unregister(this);
         if (profileService != null) {
             for (Player player : getServer().getOnlinePlayers()) profileService.touch(player.getUniqueId(), player.getName(), false);
@@ -105,9 +121,11 @@ public final class MiraCorePlugin extends JavaPlugin {
     public MessageService messages() { return messageService; }
     public MaintenanceService maintenance() { return maintenanceService; }
     public UpdateService updates() { return updateService; }
+    public RewardService rewards() { return rewardService; }
     public void reloadCoreConfiguration() {
         reloadConfig();
         messageService.reload();
         if (maintenanceService != null) maintenanceService.reload();
+        if (rewardService != null) rewardService.reloadClaimCodes();
     }
 }

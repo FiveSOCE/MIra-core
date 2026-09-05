@@ -1,14 +1,14 @@
 package com.mira.core.listener;
 
 import com.mira.core.api.MaintenanceService;
-import org.bukkit.ChatColor;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerLoginEvent;
-import org.bukkit.event.server.ServerListPingEvent;
 
 public final class CoreMaintenanceListener implements Listener {
+    private static final LegacyComponentSerializer LEGACY = LegacyComponentSerializer.legacyAmpersand();
     private final MaintenanceService maintenance;
 
     public CoreMaintenanceListener(MaintenanceService maintenance) {
@@ -19,15 +19,9 @@ public final class CoreMaintenanceListener implements Listener {
     public void onLogin(PlayerLoginEvent event) {
         if (!maintenance.enabled()) return;
         if (event.getPlayer().hasPermission(maintenance.bypassPermission())) return;
-        event.disallow(PlayerLoginEvent.Result.KICK_OTHER, color(maintenance.kickMessage()));
-    }
 
-    @EventHandler(priority = EventPriority.HIGHEST)
-    public void onPing(ServerListPingEvent event) {
-        if (maintenance.enabled()) event.setMotd(color(maintenance.motd()));
-    }
-
-    private static String color(String raw) {
-        return ChatColor.translateAlternateColorCodes('&', raw == null ? "" : raw);
+        String reason = maintenance.reason().orElse("Server maintenance");
+        event.disallow(PlayerLoginEvent.Result.KICK_OTHER,
+                LEGACY.deserialize(maintenance.kickMessage().replace("%reason%", reason)));
     }
 }

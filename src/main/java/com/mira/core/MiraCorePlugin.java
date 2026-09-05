@@ -3,6 +3,7 @@ package com.mira.core;
 import com.mira.core.api.*;
 import com.mira.core.listener.CoreBossBarListener;
 import com.mira.core.listener.CoreMaintenanceListener;
+import com.mira.core.listener.CoreMotdListener;
 import com.mira.core.listener.CoreProfileListener;
 import com.mira.core.listener.CoreRewardGuiListener;
 import com.mira.core.gui.CoreRewardGui;
@@ -25,6 +26,7 @@ public final class MiraCorePlugin extends JavaPlugin {
     private CoreMilestoneService milestoneService;
     private CoreBossBarService bossBarService;
     private CoreMaintenanceService maintenanceService;
+    private CoreMotdService motdService;
     private CoreUpdateService updateService;
     private CoreRewardService rewardService;
     private CoreRewardGui rewardGui;
@@ -46,6 +48,7 @@ public final class MiraCorePlugin extends JavaPlugin {
         milestoneService = new CoreMilestoneService(this);
         bossBarService = new CoreBossBarService();
         maintenanceService = new CoreMaintenanceService(this, auditService);
+        motdService = new CoreMotdService(this, maintenanceService);
         updateService = new CoreUpdateService(this, moduleRegistry);
         rewardService = new CoreRewardService(this, auditService);
         rewardGui = new CoreRewardGui(rewardService, messageService);
@@ -73,6 +76,7 @@ public final class MiraCorePlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new CoreProfileListener(profileService), this);
         getServer().getPluginManager().registerEvents(new CoreBossBarListener(bossBarService), this);
         getServer().getPluginManager().registerEvents(new CoreMaintenanceListener(maintenanceService), this);
+        getServer().getPluginManager().registerEvents(new CoreMotdListener(motdService), this);
         getServer().getPluginManager().registerEvents(new CoreRewardGuiListener(rewardService, messageService, rewardGui), this);
         getServer().getScheduler().runTaskTimer(this, maintenanceService::tick, 20L, 20L);
         for (Player player : getServer().getOnlinePlayers()) profileService.touch(player.getUniqueId(), player.getName(), true);
@@ -89,6 +93,10 @@ public final class MiraCorePlugin extends JavaPlugin {
         if (rewardsCommand == null || claimCommand == null) throw new IllegalStateException("reward commands are missing from plugin.yml");
         rewardsCommand.setExecutor(playerRewards);
         claimCommand.setExecutor(playerRewards);
+
+        if (getServer().getPluginManager().getPlugin("MOTD") != null) {
+            getLogger().warning("A separate plugin named MOTD is installed. MiraCore now owns the server-list MOTD; remove the old MOTD JAR to avoid competing ping listeners.");
+        }
 
         getLogger().info("MiraCore v" + api.version() + " enabled. Shared suite services registered.");
 
@@ -126,6 +134,7 @@ public final class MiraCorePlugin extends JavaPlugin {
         reloadConfig();
         messageService.reload();
         if (maintenanceService != null) maintenanceService.reload();
+        if (motdService != null) motdService.reload();
         if (rewardService != null) rewardService.reloadClaimCodes();
     }
 }

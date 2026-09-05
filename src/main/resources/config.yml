@@ -8,3 +8,46 @@ diagnostics:
 # Shared suite audit history.
 audit:
   max-entries: 5000
+
+# Shared maintenance authority. Runtime state/schedules are persisted in maintenance.yml.
+maintenance:
+  enabled: false
+  bypass-permission: "miracore.maintenance.bypass"
+  kick-message: "&5&lMira &8>> &cThe server is currently under maintenance. Please try again later."
+  motd: "&5&lMira &8- &cMaintenance"
+
+# Report-only GitHub release checks. MiraCore never downloads or replaces JARs.
+updater:
+  enabled: true
+  timeout-seconds: 8
+  repositories:
+    MiraCore: "FiveSOCE/MIra-core"
+    MiraFactions: "FiveSOCE/Mira-Factions"
+    MiraSpawners: "FiveSOCE/Mira-Spawners"
+    MiraShop: "FiveSOCE/Mira-shop"
+    MiraCombat: "FiveSOCE/Mira-Combat"
+    MiraEnchantments: "FiveSOCE/Mira-Enchants"
+    MiraItems: "FiveSOCE/Mira-Items"
+    MiraCrates: "FiveSOCE/Mira-Crates"
+    MiraTags: "FiveSOCE/Mira-Tags"
+    MiraTab: "FiveSOCE/Mira-Tab"
+    MiraNPC: "FiveSOCE/Mira-NPC"
+    MiraAuctionHouse: "FiveSOCE/Mira-AuctionHouse"
+    MiraKits: "FiveSOCE/Mira-Kits"
+    MiraFly: "FiveSOCE/Mira-Fly"
+    MiraHomes: "FiveSOCE/Mira-Homes"
+    MiraWarps: "FiveSOCE/Mira-Warps"
+    MiraWithdraw: "FiveSOCE/Mira-Withdraw"
+    MiraRedeem: "FiveSOCE/Mira-Redeem"
+    MiraPinata: "FiveSOCE/Mira-Pinata"
+    MiraBounties: "FiveSOCE/Mira-Bounties"
+    MiraEvents: "FiveSOCE/Mira-Events"
+    MiraSeasons: "FiveSOCE/Mira-Seasons"
+    MiraLeaderboards: "FiveSOCE/Mira-Leaderboards"
+    MiraPlaytime: "FiveSOCE/Mira-Playtime"
+    MiraDaily: "FiveSOCE/Mira-Daily"
+    MiraCosmetics: "FiveSOCE/Mira-Cosmetics"
+    MiraSellWands: "FiveSOCE/Mira-Sellwands"
+    MiraCollectors: "FiveSOCE/Mira-Collectors"
+    MiraOutposts: "FiveSOCE/Mira-Outposts"
+    MiraRTP: "FiveSOCE/Mira-RTP"

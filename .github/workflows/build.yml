@@ -36,19 +36,19 @@ jobs:
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: MiraCore-0.3.0
-          path: build/libs/MiraCore-0.3.0.jar
+          name: MiraCore-0.4.0
+          path: build/libs/MiraCore-0.4.0.jar
           if-no-files-found: error
 
-      - name: Publish v0.3.0 release if missing
+      - name: Publish v0.4.0 release if missing
         if: github.event_name != 'pull_request'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          if ! gh release view v0.3.0 >/dev/null 2>&1; then
-            gh release create v0.3.0 \
-              build/libs/MiraCore-0.3.0.jar \
+          if ! gh release view v0.4.0 >/dev/null 2>&1; then
+            gh release create v0.4.0 \
+              build/libs/MiraCore-0.4.0.jar \
               --target "${{ github.sha }}" \
-              --title "MiraCore v0.3.0" \
-              --notes "Adds shared BossBar presentation, persistent maintenance mode with bypass and scheduled activation, and report-only GitHub release checking for installed Mira modules. No automatic plugin downloads or replacements are performed."
+              --title "MiraCore v0.4.0" \
+              --notes "Adds the shared persistent RewardService, /rewards paginated claim preview, partial overflow-safe item delivery, queued command rewards and one-claim global /claim codes. Existing BossBar, maintenance and report-only updater services remain intact."
           fi

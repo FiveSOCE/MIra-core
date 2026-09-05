@@ -69,15 +69,18 @@ public final class CoreMaintenanceService implements MaintenanceService {
 
     @Override
     public void disable(String actor) {
+        boolean wasEnabled = enabled;
         enabled = false;
         startAt = 0L;
         endAt = 0L;
         reason = "";
         lastCountdownSecond = -1L;
         persist();
-        audit("MAINTENANCE_DISABLED", actor, Map.of());
-        broadcast(plugin.getConfig().getString("maintenance.messages.disabled",
-                "&aMaintenance mode has ended. The server is open again."));
+        audit("MAINTENANCE_DISABLED", actor, Map.of("wasEnabled", Boolean.toString(wasEnabled)));
+        if (wasEnabled) {
+            broadcast(plugin.getConfig().getString("maintenance.messages.disabled",
+                    "&aMaintenance mode has ended. The server is open again."));
+        }
     }
 
     @Override
@@ -118,6 +121,16 @@ public final class CoreMaintenanceService implements MaintenanceService {
         long now = System.currentTimeMillis();
 
         if (!enabled && startAt > 0L) {
+            if (endAt > 0L && now >= endAt) {
+                startAt = 0L;
+                endAt = 0L;
+                reason = "";
+                lastCountdownSecond = -1L;
+                persist();
+                audit("MAINTENANCE_WINDOW_EXPIRED", "scheduler", Map.of());
+                return;
+            }
+
             long millis = startAt - now;
             if (millis <= 0L) {
                 activate("scheduler", true);
@@ -141,6 +154,8 @@ public final class CoreMaintenanceService implements MaintenanceService {
             lastCountdownSecond = -1L;
             persist();
             audit("MAINTENANCE_DISABLED_SCHEDULED", "scheduler", Map.of());
+            broadcast(plugin.getConfig().getString("maintenance.messages.disabled",
+                    "&aMaintenance mode has ended. The server is open again."));
         }
     }
 

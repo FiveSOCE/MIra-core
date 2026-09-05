@@ -4,7 +4,7 @@ MiraCore is the shared infrastructure and API layer for the Mira Paper server su
 
 ## Download
 
-[**Download MiraCore v0.4.0**](https://github.com/FiveSOCE/Mira-core/releases/download/v0.4.0/MiraCore-0.4.0.jar)
+[**Download MiraCore v0.4.1**](https://github.com/FiveSOCE/Mira-core/releases/download/v0.4.1/MiraCore-0.4.1.jar)
 
 [View All Releases](https://github.com/FiveSOCE/Mira-core/releases)
 
@@ -30,8 +30,10 @@ The module registry lets plugins report whether they are healthy or degraded, wh
 | `/miracore audit [query]` | `miracore.admin` | Views/searches shared Mira audit history. |
 | `/miracore profiles` | `miracore.admin` | Shows shared player-profile information/statistics. |
 | `/miracore maintenance status` | `miracore.admin` | Shows maintenance state and schedules. |
-| `/miracore maintenance on\|off` | `miracore.admin` | Enables or disables maintenance mode. |
-| `/miracore maintenance schedule <delay> [duration]` | `miracore.admin` | Schedules a future maintenance window using values such as `10m`, `2h` or `1d`. |
+| `/miracore maintenance on [reason...]` | `miracore.admin` | Starts the configured maintenance countdown, then activates maintenance and kicks every connected player. |
+| `/miracore maintenance force [reason...]` | `miracore.admin` | Activates maintenance immediately and kicks every connected player. |
+| `/miracore maintenance off` | `miracore.admin` | Ends maintenance and reopens normal joining. |
+| `/miracore maintenance schedule <delay> [duration] [reason...]` | `miracore.admin` | Schedules a future maintenance window with countdown warnings, optional auto-reopen duration and a persisted reason. |
 | `/miracore maintenance cancel` | `miracore.admin` | Clears the scheduled maintenance window. |
 | `/miracore updates [refresh]` | `miracore.admin` | Compares installed Mira module versions with verified GitHub Releases. Never auto-downloads. |
 | `/miracore reload` | `miracore.admin` | Reloads MiraCore configuration. |
@@ -52,7 +54,7 @@ Alias: `/mcore`
 
 MiraCore now exposes `BossBarService` as the suite-wide boss-bar presentation authority. Other Mira modules can create/update a player-scoped named bar without each plugin maintaining its own unrelated boss-bar implementation.
 
-`MaintenanceService` owns persistent maintenance state and scheduled activation. Non-bypass players are denied during maintenance, while the server list MOTD and kick message are configurable.
+`MaintenanceService` owns persistent maintenance state, reasons and scheduled activation. When maintenance activates, every connected player is kicked; the bypass permission controls who may rejoin afterward. MiraCore also owns the normal server-list MOTD and maintenance MOTD override.
 
 `UpdateService` compares registered Mira module versions against configured GitHub repositories asynchronously. It is intentionally report-only: MiraCore does not download, replace or hot-swap plugin JARs.
 
@@ -75,3 +77,56 @@ MiraCore now owns the reusable `RewardService` so other Mira plugins can queue r
 Global claim codes are configured in `claim-codes.yml`. Codes are case-insensitive, can require a permission and/or expiry timestamp, and may queue item plus console-command rewards.
 
 A code is recorded as used once its reward has been safely queued. This prevents repeated redemption while still allowing inventory overflow to be claimed later through `/rewards`.
+
+## Native MOTD and Maintenance Workflow (0.4.1)
+
+MiraCore now replaces the old standalone MOTD plugin as the authoritative server-list presentation layer.
+
+### Remove the old MOTD JAR
+
+After installing MiraCore v0.4.1, remove the old plugin JAR whose Bukkit plugin name is `MOTD` (for example the previous `Valk MOTD.jar`). Running both is unnecessary and can create competing `ServerListPingEvent` writers. MiraCore logs a warning if it detects that legacy plugin still installed.
+
+### Normal MOTD
+
+`config.yml` now supports:
+
+- two normal server-list MOTD lines
+- two maintenance-specific MOTD lines
+- optional join MOTD messages
+- optional displayed maximum-player override
+- optional cached `server-icon.png` loaded from the MiraCore data folder
+
+Maintenance MOTD lines support `%reason%` and `%end%` placeholders.
+
+### Maintenance activation
+
+`/miracore maintenance on [reason...]` starts the configured `maintenance.activation-countdown-seconds` countdown. The default is 30 seconds.
+
+Configured warning thresholds are broadcast while the countdown runs. Defaults are:
+
+`1800, 600, 300, 60, 30, 10, 5, 4, 3, 2, 1` seconds.
+
+When the countdown reaches zero:
+
+1. MiraCore persists maintenance as active.
+2. the server-list MOTD switches to the maintenance presentation.
+3. **every currently connected player is kicked, including staff/bypass users**.
+4. subsequent login attempts are denied unless the player has `miracore.maintenance.bypass`.
+
+This means bypass is deliberately a **re-entry permission**, not protection from the activation kick.
+
+### Scheduling
+
+Examples:
+
+```text
+/miracore maintenance on Plugin updates
+/miracore maintenance schedule 10m Plugin updates
+/miracore maintenance schedule 30m 2h Database maintenance
+/miracore maintenance force Emergency maintenance
+/miracore maintenance off
+```
+
+Maintenance reason, scheduled start and scheduled end are persisted in `maintenance.yml`. Admin-facing scheduled times are displayed in `Australia/Brisbane` time.
+
+Expired maintenance windows are discarded safely rather than briefly activating/kicking players during a late reload.

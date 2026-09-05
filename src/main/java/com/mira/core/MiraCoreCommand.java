@@ -16,6 +16,8 @@ import java.util.*;
 public final class MiraCoreCommand implements CommandExecutor, TabCompleter {
     private static final List<String> SUBCOMMANDS = List.of("status", "test", "reload", "why", "audit", "profiles", "maintenance", "updates", "help");
     private static final DateTimeFormatter TIME = DateTimeFormatter.ofPattern("MM-dd HH:mm").withZone(ZoneId.systemDefault());
+    private static final DateTimeFormatter MAINTENANCE_TIME =
+            DateTimeFormatter.ofPattern("dd MMM yyyy, h:mm a z").withZone(ZoneId.of("Australia/Brisbane"));
     private final MiraCorePlugin plugin;
 
     public MiraCoreCommand(MiraCorePlugin plugin) { this.plugin = plugin; }
@@ -118,22 +120,50 @@ public final class MiraCoreCommand implements CommandExecutor, TabCompleter {
 
     private boolean maintenance(CommandSender sender, String[] args) {
         MaintenanceService maintenance = plugin.maintenance();
+
         if (args.length < 2 || args[1].equalsIgnoreCase("status")) {
             plugin.messages().send(sender, Component.text("Maintenance: " + (maintenance.enabled() ? "ENABLED" : "disabled"),
                     maintenance.enabled() ? NamedTextColor.RED : NamedTextColor.GREEN));
+            maintenance.reason().ifPresent(reason ->
+                    plugin.messages().send(sender, Component.text("Reason: " + reason, NamedTextColor.GRAY)));
             maintenance.scheduledStart().ifPresent(start ->
-                    plugin.messages().send(sender, Component.text("Scheduled start: " + start, NamedTextColor.YELLOW)));
+                    plugin.messages().send(sender, Component.text("Scheduled start: " + MAINTENANCE_TIME.format(start), NamedTextColor.YELLOW)));
             maintenance.scheduledEnd().ifPresent(end ->
-                    plugin.messages().send(sender, Component.text("Scheduled end: " + end, NamedTextColor.YELLOW)));
-            plugin.messages().send(sender, Component.text("Bypass permission: " + maintenance.bypassPermission(), NamedTextColor.GRAY));
+                    plugin.messages().send(sender, Component.text("Scheduled end: " + MAINTENANCE_TIME.format(end), NamedTextColor.YELLOW)));
+            plugin.messages().send(sender, Component.text("Bypass re-entry permission: " + maintenance.bypassPermission(), NamedTextColor.GRAY));
             return true;
         }
 
         String action = args[1].toLowerCase(Locale.ROOT);
         switch (action) {
             case "on" -> {
-                maintenance.enable(sender.getName());
-                plugin.messages().send(sender, Component.text("Maintenance mode enabled.", NamedTextColor.GREEN));
+                if (maintenance.enabled()) {
+                    plugin.messages().send(sender, Component.text("Maintenance mode is already active.", NamedTextColor.YELLOW));
+                    return true;
+                }
+
+                String reason = args.length >= 3
+                        ? String.join(" ", Arrays.copyOfRange(args, 2, args.length))
+                        : plugin.getConfig().getString("maintenance.default-reason", "Server maintenance");
+                long countdown = Math.max(0L, plugin.getConfig().getLong("maintenance.activation-countdown-seconds", 30L));
+
+                if (countdown <= 0L) {
+                    maintenance.enable(sender.getName(), reason);
+                    plugin.messages().send(sender, Component.text("Maintenance mode enabled immediately.", NamedTextColor.GREEN));
+                } else {
+                    Instant startAt = Instant.now().plusSeconds(countdown);
+                    maintenance.schedule(startAt, null, sender.getName(), reason);
+                    plugin.messages().send(sender, Component.text(
+                            "Maintenance countdown started for " + countdown + "s. Reason: " + reason,
+                            NamedTextColor.GREEN));
+                }
+            }
+            case "force" -> {
+                String reason = args.length >= 3
+                        ? String.join(" ", Arrays.copyOfRange(args, 2, args.length))
+                        : plugin.getConfig().getString("maintenance.default-reason", "Server maintenance");
+                maintenance.enable(sender.getName(), reason);
+                plugin.messages().send(sender, Component.text("Maintenance mode enabled immediately.", NamedTextColor.GREEN));
             }
             case "off" -> {
                 maintenance.disable(sender.getName());
@@ -141,27 +171,55 @@ public final class MiraCoreCommand implements CommandExecutor, TabCompleter {
             }
             case "cancel" -> {
                 maintenance.clearSchedule(sender.getName());
-                plugin.messages().send(sender, Component.text("Maintenance schedule cleared.", NamedTextColor.GREEN));
+                plugin.messages().send(sender, Component.text("Maintenance schedule/countdown cleared.", NamedTextColor.GREEN));
             }
             case "schedule" -> {
                 if (args.length < 3) {
-                    plugin.messages().send(sender, Component.text("Usage: /miracore maintenance schedule <delay> [duration]", NamedTextColor.RED));
+                    plugin.messages().send(sender, Component.text(
+                            "Usage: /miracore maintenance schedule <delay> [duration] [reason...]", NamedTextColor.RED));
                     return true;
                 }
+
                 Duration delay = parseDuration(args[2]);
-                Duration duration = args.length >= 4 ? parseDuration(args[3]) : null;
-                if (delay == null || delay.isNegative() || delay.isZero() || (duration != null && (duration.isNegative() || duration.isZero()))) {
+                if (delay == null || delay.isNegative() || delay.isZero()) {
                     plugin.messages().send(sender, Component.text("Use durations such as 10m, 2h or 1d.", NamedTextColor.RED));
                     return true;
                 }
-                Instant start = Instant.now().plus(delay);
-                Instant end = duration == null ? null : start.plus(duration);
-                maintenance.schedule(start, end, sender.getName());
-                plugin.messages().send(sender, Component.text("Maintenance scheduled for " + start
-                        + (end == null ? "" : " until " + end) + ".", NamedTextColor.GREEN));
+
+                Duration duration = null;
+                int reasonIndex = 3;
+                if (args.length >= 4) {
+                    Duration possibleDuration = parseDuration(args[3]);
+                    if (possibleDuration != null) {
+                        if (possibleDuration.isNegative() || possibleDuration.isZero()) {
+                            plugin.messages().send(sender, Component.text("Maintenance duration must be positive.", NamedTextColor.RED));
+                            return true;
+                        }
+                        duration = possibleDuration;
+                        reasonIndex = 4;
+                    }
+                }
+
+                String reason = reasonIndex < args.length
+                        ? String.join(" ", Arrays.copyOfRange(args, reasonIndex, args.length))
+                        : plugin.getConfig().getString("maintenance.default-reason", "Server maintenance");
+
+                Instant startAt = Instant.now().plus(delay);
+                Instant endAt = duration == null ? null : startAt.plus(duration);
+                try {
+                    maintenance.schedule(startAt, endAt, sender.getName(), reason);
+                    plugin.messages().send(sender, Component.text(
+                            "Maintenance scheduled for " + MAINTENANCE_TIME.format(startAt)
+                                    + (endAt == null ? "" : " until " + MAINTENANCE_TIME.format(endAt))
+                                    + ". Reason: " + reason,
+                            NamedTextColor.GREEN));
+                } catch (IllegalStateException exception) {
+                    plugin.messages().send(sender, Component.text(exception.getMessage(), NamedTextColor.RED));
+                }
             }
             default -> plugin.messages().send(sender, Component.text(
-                    "Usage: /miracore maintenance <status|on|off|schedule <delay> [duration]|cancel>", NamedTextColor.RED));
+                    "Usage: /miracore maintenance <status|on [reason]|force [reason]|off|schedule <delay> [duration] [reason]|cancel>",
+                    NamedTextColor.RED));
         }
         return true;
     }
@@ -231,7 +289,8 @@ public final class MiraCoreCommand implements CommandExecutor, TabCompleter {
         plugin.messages().send(sender, Component.text("/miracore why <player> <permission>", NamedTextColor.AQUA).append(Component.text(" - Explain live permission result", NamedTextColor.GRAY)));
         plugin.messages().send(sender, Component.text("/miracore audit [query]", NamedTextColor.AQUA).append(Component.text(" - Search global Mira audit log", NamedTextColor.GRAY)));
         plugin.messages().send(sender, Component.text("/miracore profiles", NamedTextColor.AQUA).append(Component.text(" - Inspect shared profile cache", NamedTextColor.GRAY)));
-        plugin.messages().send(sender, Component.text("/miracore maintenance <status|on|off|schedule|cancel>", NamedTextColor.AQUA).append(Component.text(" - Maintenance mode and schedules", NamedTextColor.GRAY)));
+        plugin.messages().send(sender, Component.text("/miracore maintenance <status|on|force|off|schedule|cancel>", NamedTextColor.AQUA)
+                .append(Component.text(" - Maintenance countdown, gate and schedules", NamedTextColor.GRAY)));
         plugin.messages().send(sender, Component.text("/miracore updates [refresh]", NamedTextColor.AQUA).append(Component.text(" - Report installed Mira modules against GitHub releases", NamedTextColor.GRAY)));
         plugin.messages().send(sender, Component.text("/miracore reload", NamedTextColor.AQUA).append(Component.text(" - Reload Core config", NamedTextColor.GRAY)));
         return true;
@@ -259,7 +318,7 @@ public final class MiraCoreCommand implements CommandExecutor, TabCompleter {
         }
         if (args.length == 2 && args[0].equalsIgnoreCase("maintenance")) {
             String typed = args[1].toLowerCase(Locale.ROOT);
-            return List.of("status", "on", "off", "schedule", "cancel").stream().filter(v -> v.startsWith(typed)).toList();
+            return List.of("status", "on", "force", "off", "schedule", "cancel").stream().filter(v -> v.startsWith(typed)).toList();
         }
         if (args.length == 2 && args[0].equalsIgnoreCase("updates")) {
             return "refresh".startsWith(args[1].toLowerCase(Locale.ROOT)) ? List.of("refresh") : List.of();

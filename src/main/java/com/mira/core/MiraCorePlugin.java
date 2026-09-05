@@ -1,6 +1,8 @@
 package com.mira.core;
 
 import com.mira.core.api.*;
+import com.mira.core.listener.CoreBossBarListener;
+import com.mira.core.listener.CoreMaintenanceListener;
 import com.mira.core.listener.CoreProfileListener;
 import com.mira.core.service.*;
 import org.bukkit.command.PluginCommand;
@@ -19,6 +21,9 @@ public final class MiraCorePlugin extends JavaPlugin {
     private CorePaginationService paginationService;
     private CorePermissionDebugService permissionDebugService;
     private CoreMilestoneService milestoneService;
+    private CoreBossBarService bossBarService;
+    private CoreMaintenanceService maintenanceService;
+    private CoreUpdateService updateService;
     private MiraCoreApiImpl api;
 
     @Override
@@ -35,9 +40,13 @@ public final class MiraCorePlugin extends JavaPlugin {
         paginationService = new CorePaginationService();
         permissionDebugService = new CorePermissionDebugService();
         milestoneService = new CoreMilestoneService(this);
+        bossBarService = new CoreBossBarService();
+        maintenanceService = new CoreMaintenanceService(this, auditService);
+        updateService = new CoreUpdateService(this, moduleRegistry);
 
         api = new MiraCoreApiImpl(getPluginMeta().getVersion(), messageService, serviceRegistry, cooldownService, moduleRegistry,
-                profileService, notificationService, auditService, paginationService, permissionDebugService, milestoneService);
+                profileService, notificationService, auditService, paginationService, permissionDebugService, milestoneService,
+                bossBarService, maintenanceService, updateService);
         CoreDiagnostics diagnostics = new CoreDiagnostics(this, api, serviceRegistry, cooldownService, moduleRegistry);
         api.diagnostics(diagnostics);
 
@@ -49,9 +58,15 @@ public final class MiraCorePlugin extends JavaPlugin {
         serviceRegistry.register(PaginationService.class, paginationService);
         serviceRegistry.register(PermissionDebugService.class, permissionDebugService);
         serviceRegistry.register(MilestoneService.class, milestoneService);
+        serviceRegistry.register(BossBarService.class, bossBarService);
+        serviceRegistry.register(MaintenanceService.class, maintenanceService);
+        serviceRegistry.register(UpdateService.class, updateService);
         moduleRegistry.register(this, "MiraCore");
 
         getServer().getPluginManager().registerEvents(new CoreProfileListener(profileService), this);
+        getServer().getPluginManager().registerEvents(new CoreBossBarListener(bossBarService), this);
+        getServer().getPluginManager().registerEvents(new CoreMaintenanceListener(maintenanceService), this);
+        getServer().getScheduler().runTaskTimer(this, maintenanceService::tick, 20L, 20L);
         for (Player player : getServer().getOnlinePlayers()) profileService.touch(player.getUniqueId(), player.getName(), true);
 
         MiraCoreCommand executor = new MiraCoreCommand(this);
@@ -79,6 +94,7 @@ public final class MiraCorePlugin extends JavaPlugin {
         if (api != null) getServer().getServicesManager().unregister(MiraCore.class, api);
         if (serviceRegistry != null && api != null) serviceRegistry.unregister(MiraCore.class, api);
         if (cooldownService != null) cooldownService.clearAll();
+        if (bossBarService != null) bossBarService.shutdown();
         if (moduleRegistry != null) moduleRegistry.unregister(this);
         if (profileService != null) {
             for (Player player : getServer().getOnlinePlayers()) profileService.touch(player.getUniqueId(), player.getName(), false);
@@ -87,5 +103,11 @@ public final class MiraCorePlugin extends JavaPlugin {
 
     public MiraCoreApiImpl api() { return api; }
     public MessageService messages() { return messageService; }
-    public void reloadCoreConfiguration() { reloadConfig(); messageService.reload(); }
+    public MaintenanceService maintenance() { return maintenanceService; }
+    public UpdateService updates() { return updateService; }
+    public void reloadCoreConfiguration() {
+        reloadConfig();
+        messageService.reload();
+        if (maintenanceService != null) maintenanceService.reload();
+    }
 }

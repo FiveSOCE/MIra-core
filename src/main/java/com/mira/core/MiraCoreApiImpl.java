@@ -15,12 +15,16 @@ public final class MiraCoreApiImpl implements MiraCore {
     private final PaginationService pagination;
     private final PermissionDebugService permissionDebug;
     private final MilestoneService milestones;
+    private final BossBarService bossBars;
+    private final MaintenanceService maintenance;
+    private final UpdateService updates;
     private CoreDiagnostics diagnostics;
 
     public MiraCoreApiImpl(String version, MessageService messages, ServiceRegistry services, CooldownService cooldowns,
                            ModuleRegistry modules, PlayerProfileService profiles, NotificationService notifications,
                            AuditService audit, PaginationService pagination, PermissionDebugService permissionDebug,
-                           MilestoneService milestones) {
+                           MilestoneService milestones, BossBarService bossBars, MaintenanceService maintenance,
+                           UpdateService updates) {
         this.version = version;
         this.messages = messages;
         this.services = services;
@@ -32,6 +36,9 @@ public final class MiraCoreApiImpl implements MiraCore {
         this.pagination = pagination;
         this.permissionDebug = permissionDebug;
         this.milestones = milestones;
+        this.bossBars = bossBars;
+        this.maintenance = maintenance;
+        this.updates = updates;
     }
 
     public void diagnostics(CoreDiagnostics diagnostics) { this.diagnostics = diagnostics; }
@@ -46,6 +53,9 @@ public final class MiraCoreApiImpl implements MiraCore {
     @Override public PaginationService pagination() { return pagination; }
     @Override public PermissionDebugService permissionDebug() { return permissionDebug; }
     @Override public MilestoneService milestones() { return milestones; }
+    @Override public BossBarService bossBars() { return bossBars; }
+    @Override public MaintenanceService maintenance() { return maintenance; }
+    @Override public UpdateService updates() { return updates; }
 
     @Override
     public DiagnosticReport runDiagnostics() {

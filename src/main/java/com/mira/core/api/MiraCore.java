@@ -29,5 +29,7 @@ public interface MiraCore {
 
     UpdateService updates();
 
+    RewardService rewards();
+
     DiagnosticReport runDiagnostics();
 }

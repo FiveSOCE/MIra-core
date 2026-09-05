@@ -23,5 +23,11 @@ public interface MiraCore {
 
     MilestoneService milestones();
 
+    BossBarService bossBars();
+
+    MaintenanceService maintenance();
+
+    UpdateService updates();
+
     DiagnosticReport runDiagnostics();
 }
